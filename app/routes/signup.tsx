@@ -1,5 +1,5 @@
 import { ActionArgs } from "@remix-run/node";
-import { Form, Link, useNavigation } from "@remix-run/react";
+import { Form, Link, useActionData, useNavigation } from "@remix-run/react";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Loading from "~/components/UI/Loading";
@@ -14,6 +14,7 @@ export async function loader({ request }: ActionArgs) {
 
 export default function SignUp() {
   const navigation = useNavigation();
+  const data = useActionData();
 
   return (
     <div className="flex justify-center items-center w-full h-[85vh]">
@@ -24,6 +25,11 @@ export default function SignUp() {
         <h1 className="text-xl md:text-3xl dark:text-accent text-primary">
           Sign Up
         </h1>
+        {data?.message && (
+          <span className="bg-error text-primary m-2 p-2 font-semibold rounded-lg text-center">
+            {data.message}
+          </span>
+        )}
         <Input
           id="username"
           label="Username"
@@ -73,9 +79,17 @@ export async function action({ request }: ActionArgs) {
   const password = (form.get("password") as string).replace(/ /g, "");
   const confirm = (form.get("confirm") as string).replace(/ /g, "");
 
-  if (password !== confirm) return;
+  if (username.length > 12)
+    return { message: "Username too long. Must be less than 12 characters" };
 
-  await signup(username, password);
+  if (username.length <= 0 || password.length <= 0 || confirm.length <= 0)
+    return { message: "Form is incomplete. Fill every field correctly" };
+
+  if (password !== confirm) return { message: "Passwords don't match" };
+
+  const result = await signup(username, password);
+
+  if (result.isError()) return result.error;
 
   return await authenticator.authenticate("form", request, {
     successRedirect: "/",

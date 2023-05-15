@@ -1,5 +1,5 @@
 import { ActionArgs, V2_MetaFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import React, { useEffect, useState } from "react";
 import { StatementItem } from "~/components/Statement/StatementItem";
 import Button from "~/components/UI/Button";
@@ -83,14 +83,15 @@ export default function Index() {
         <div className="w-full h-[85vh] flex flex-col justify-center text-center items-center">
           <span className="text-darkAccent dark:text-primary text-2xl">
             {" "}
-            No Statements yet.
+            No Statements yet. Add an{" "}
+            <Link to="accounts" className="text-accent">
+              Account
+            </Link>{" "}
+            or a new{" "}
+            <Link to="upload" className="text-accent">
+              Statement
+            </Link>
           </span>
-          <Button
-            type="button"
-            className="bg-darkAccent text-primary dark:bg-primary dark:text-darkAccent"
-          >
-            Add a new statement
-          </Button>
         </div>
       )}
     </>

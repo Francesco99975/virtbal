@@ -9,7 +9,12 @@ import Input from "~/components/UI/Input";
 import Loading from "~/components/UI/Loading";
 import { parseTd } from "~/server/upload.server";
 import path from "path";
-import { Form, useLoaderData, useNavigation } from "@remix-run/react";
+import {
+  Form,
+  useActionData,
+  useLoaderData,
+  useNavigation,
+} from "@remix-run/react";
 import { authenticator } from "~/server/auth/auth.server";
 import { getUserAccounts } from "~/server/fetch.server";
 import { Account, BankLabels } from "~/interfaces/account";
@@ -32,6 +37,7 @@ export async function loader({ request }: ActionArgs) {
 
 export default function Upload() {
   const navigation = useNavigation();
+  const data = useActionData();
 
   const { rawAccounts } = useLoaderData();
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -58,7 +64,11 @@ export default function Upload() {
           className="flex flex-col items-center text-center w-fill mb-5"
         >
           <h1 className="text-xl md:text-3xl mb-2">Upload Statement</h1>
-
+          {data?.message && (
+            <span className="bg-error text-primary m-2 p-2 font-semibold rounded-lg">
+              {data.message}
+            </span>
+          )}
           <div className="w-3/4">
             <Input
               classnm="text-darkAccent dark:text-primary"
@@ -92,6 +102,7 @@ export default function Upload() {
           <div className=" w-3/4">
             <Button
               type="submit"
+              disabled={navigation.state === "submitting"}
               className="dark:bg-primary dark:text-darkAccent bg-darkAccent text-primary w-1/2 "
             >
               Upload File
@@ -117,7 +128,7 @@ export async function action({ request }: ActionArgs) {
   const accountId = data.get("account");
   const filePath = file.get("file");
 
-  if (!filePath || !accountId) return;
+  if (!filePath || !accountId) return { message: "File not selected" };
 
   const user = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
@@ -129,7 +140,7 @@ export async function action({ request }: ActionArgs) {
     accountId.toString()
   );
 
-  if (response.isError()) return;
+  if (response.isError()) return { message: "File could not be parsed" };
 
   return redirect("/");
 }

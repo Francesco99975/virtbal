@@ -19,6 +19,7 @@ export default function Login() {
     <div className="flex justify-center items-center w-full h-[85vh]">
       <Form
         method="post"
+        id="form"
         className="flex flex-col w-1/3 justify-between items-center rounded-md bg-darkAccent dark:bg-primary p-5"
       >
         <h1 className="text-xl md:text-3xl dark:text-accent text-primary">

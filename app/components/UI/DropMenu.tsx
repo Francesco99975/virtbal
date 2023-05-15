@@ -4,7 +4,7 @@ import {
   AdjustmentsHorizontalIcon,
   ChevronDownIcon,
 } from "@heroicons/react/20/solid";
-import { Link } from "@remix-run/react";
+import { Form, NavLink } from "@remix-run/react";
 import Button from "./Button";
 import SunIcon from "../Icons/SunIcon";
 import MoonIcon from "../Icons/MoonIcon";
@@ -14,7 +14,11 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function DropMenu() {
+interface DropMenuProps {
+  isLoggedIn: boolean;
+}
+
+export default function DropMenu({ isLoggedIn }: DropMenuProps) {
   const { isDark, toggleDark } = useContext(ThemeContext);
   return (
     <Menu as="div" className="relative inline-block text-left">
@@ -41,7 +45,7 @@ export default function DropMenu() {
           <div className="py-1">
             <Menu.Item>
               {({ active }) => (
-                <Button
+                <button
                   type="button"
                   className={classNames(
                     active
@@ -56,56 +60,84 @@ export default function DropMenu() {
                   ) : (
                     <MoonIcon classnm="text-blue-800"></MoonIcon>
                   )}
-                </Button>
+                </button>
               )}
             </Menu.Item>
-            <Menu.Item>
-              {({ active }) => (
-                <Link
-                  to="/accounts"
-                  className={classNames(
-                    active
-                      ? "bg-accent text-darkAccent dark:bg-primary dark:text-accent"
-                      : "text-primary dark:text-darkAccent",
-                    "block px-4 py-2 text-sm"
+            {isLoggedIn && (
+              <>
+                <Menu.Item>
+                  {({ active }) => (
+                    <NavLink
+                      to="/"
+                      // className={classNames(
+                      //   active
+                      //     ? "bg-accent text-darkAccent dark:bg-primary dark:text-accent"
+                      //     : "text-primary dark:text-darkAccent",
+                      //   "block px-4 py-2 text-sm"
+                      // )}
+                      className={({ isActive }) =>
+                        isActive
+                          ? "bg-accent text-darkAccent dark:bg-primary dark:text-accent block px-4 py-2 text-sm"
+                          : "text-primary dark:text-darkAccent block px-4 py-2 text-sm"
+                      }
+                    >
+                      Statements
+                    </NavLink>
                   )}
-                >
-                  Add Account
-                </Link>
-              )}
-            </Menu.Item>
-            <Menu.Item>
-              {({ active }) => (
-                <Link
-                  to="/upload"
-                  className={classNames(
-                    active
-                      ? "bg-accent text-darkAccent dark:bg-primary dark:text-accent"
-                      : "text-primary dark:text-darkAccent",
-                    "block px-4 py-2 text-sm"
+                </Menu.Item>
+                <Menu.Item>
+                  {({ active }) => (
+                    <NavLink
+                      to="/accounts"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "bg-accent text-darkAccent dark:bg-primary dark:text-accent block px-4 py-2 text-sm"
+                          : "text-primary dark:text-darkAccent block px-4 py-2 text-sm"
+                      }
+                    >
+                      Add Account
+                    </NavLink>
                   )}
-                >
-                  Upload Statement
-                </Link>
-              )}
-            </Menu.Item>
-            <form method="POST" action="/logout">
-              <Menu.Item>
-                {({ active }) => (
-                  <button
-                    type="submit"
-                    className={classNames(
-                      active
-                        ? "bg-error text-primary"
-                        : "text-primary dark:text-darkAccent",
-                      "block w-full px-4 py-2 text-left text-sm font-semibold"
+                </Menu.Item>
+                <Menu.Item>
+                  {({ active }) => (
+                    <NavLink
+                      to="/upload"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "bg-accent text-darkAccent dark:bg-primary dark:text-accent block px-4 py-2 text-sm"
+                          : "text-primary dark:text-darkAccent block px-4 py-2 text-sm"
+                      }
+                    >
+                      Upload Statement
+                    </NavLink>
+                  )}
+                </Menu.Item>
+                <Form method="post">
+                  <input
+                    type="hidden"
+                    name="logout"
+                    id="logout"
+                    value="logout"
+                  />
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        type="submit"
+                        className={classNames(
+                          active
+                            ? "bg-error text-primary"
+                            : "text-primary dark:text-darkAccent",
+                          "block w-full px-4 py-2 text-left text-sm font-semibold"
+                        )}
+                      >
+                        Logout
+                      </button>
                     )}
-                  >
-                    Logout
-                  </button>
-                )}
-              </Menu.Item>
-            </form>
+                  </Menu.Item>
+                </Form>
+              </>
+            )}
           </div>
         </Menu.Items>
       </Transition>
