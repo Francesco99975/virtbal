@@ -10,7 +10,7 @@ import {
   ScrollRestoration,
 } from "@remix-run/react";
 import { Header } from "./components/Header/Header";
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import ThemeContext from "./store/theme-context";
 
 export const links: LinksFunction = () => [
@@ -24,7 +24,11 @@ export const links: LinksFunction = () => [
 
 export default function App() {
   const { isDark, set } = useContext(ThemeContext);
-  set();
+
+  useEffect(() => {
+    set();
+  }, []);
+
   return (
     <html lang="en" className={isDark ? "dark" : ""}>
       <head>
@@ -36,7 +40,7 @@ export default function App() {
       <body className="dark:bg-bcd">
         <div id="backload"></div>
         <div id="loading"></div>
-        <Header balance={0.0} />
+        <Header />
         <Outlet />
         <ScrollRestoration />
         <Scripts />

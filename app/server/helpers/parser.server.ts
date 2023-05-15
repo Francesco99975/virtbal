@@ -19,7 +19,7 @@ const processData = (
   startingBalance: number
 ) => {
   if (row.description.includes("STARTING BALANCE"))
-    startingBalance = parseFloat(row.balance.replace(/,/g, ""));
+    startingBalance = parseFloat(row.balance.replace(/,/g, "")) * 100;
   else {
     const isValid = row.deposits !== "" || row.withdrawals !== "";
     const isDpt = row.withdrawals == "";
@@ -27,8 +27,8 @@ const processData = (
       transactions.push({
         description: row.description,
         amount: !isDpt
-          ? parseFloat(row.withdrawals.replace(/,/g, ""))
-          : parseFloat(row.deposits.replace(/,/g, "")),
+          ? parseFloat(row.withdrawals.replace(/,/g, "")) * 100
+          : parseFloat(row.deposits.replace(/,/g, "")) * 100,
         isDeposit: isDpt,
         date: row.date,
       });

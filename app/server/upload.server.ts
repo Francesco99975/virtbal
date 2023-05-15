@@ -2,14 +2,17 @@ import axios, { AxiosResponse } from "axios";
 import fs from "fs/promises";
 import path from "path";
 import FormData from "form-data";
-import { parseDataFromCSVs } from "./helpers/parser";
+import { parseDataFromCSVs } from "./helpers/parser.server";
 import { ParsedData } from "~/interfaces/parsedData";
 import { Statement } from "~/interfaces/statement";
 import { ServerError } from "~/interfaces/serverError";
 import { Result, failure, success } from "~/interfaces/Result";
+import { prisma } from "./db.server";
 
 export async function parseTd(
-  pdfPath: string
+  pdfPath: string,
+  userId: string,
+  accountId: string
 ): Promise<Result<ServerError, Statement>> {
   try {
     // Send request to flask server attached to tabula, to parse pdf to CSVs
@@ -50,23 +53,32 @@ export async function parseTd(
 
     const totalDeposited = transactions
       .filter((trs) => trs.isDeposit)
-      .reduce((prev, curr) => prev + curr.amount, 0.0);
+      .reduce((prev, curr) => prev + curr.amount, 0);
 
     const totalSpent = transactions
       .filter((trs) => !trs.isDeposit)
-      .reduce((prev, curr) => prev + curr.amount, 0.0);
+      .reduce((prev, curr) => prev + curr.amount, 0);
 
     const virtualKeep = totalDeposited - totalSpent;
 
     // Return Results JSON Object
 
-    const statement: Statement = {
-      deposited: totalDeposited,
-      spent: totalSpent,
-      virtualKeep: virtualKeep,
-      startingBalance: startingBalance,
-      date,
-    };
+    const statement: Statement = await prisma.statements.create({
+      data: {
+        deposited: totalDeposited,
+        spent: totalSpent,
+        keep: virtualKeep,
+        startingBalance: startingBalance,
+        date,
+        accountId: accountId,
+      },
+    });
+
+    for (const transaction of transactions) {
+      await prisma.transactions.create({
+        data: { ...transaction, statementId: statement.id },
+      });
+    }
 
     return success(statement);
   } catch (error) {

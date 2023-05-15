@@ -1,6 +1,7 @@
 node_modules
 
+devscripts
 /.cache
 /build
 /public/build
-.env
+*.env

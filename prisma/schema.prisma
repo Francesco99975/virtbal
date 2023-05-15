@@ -1,11 +1,57 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [uuidOssp(map: "uuid-ossp")]
+}
+
+model Accounts {
+  id         String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name       String       @unique @db.VarChar(12)
+  bank       Int
+  userId     String       @db.Uuid
+  users      Users        @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  statements Statements[]
+
+  @@map("accounts")
+}
+
+model Statements {
+  id              String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  spent           Int
+  deposited       Int
+  keep            Int
+  date            DateTime       @db.Date
+  startingBalance Int
+  accountId       String         @db.Uuid
+  accounts        Accounts       @relation(fields: [accountId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  transactions    Transactions[]
+
+  @@map("statements")
+}
+
+model Transactions {
+  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  description String     @db.VarChar
+  amount      Int
+  isDeposit   Boolean
+  date        String     @db.VarChar
+  statementId String     @db.Uuid
+  statements  Statements @relation(fields: [statementId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("transactions")
+}
+
+model Users {
+  id             String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  username       String     @unique @db.VarChar(12)
+  hashedPassword String     @db.VarChar
+  createdAt      DateTime?  @default(now()) @db.Timestamptz(6)
+  accounts       Accounts[]
+
+  @@map("users")
 }
