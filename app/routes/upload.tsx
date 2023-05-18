@@ -20,6 +20,7 @@ import { getUserAccounts } from "~/server/fetch.server";
 import { Account, BankLabels } from "~/interfaces/account";
 import { useEffect, useState } from "react";
 import { BoxItem, SelectBox } from "~/components/UI/SelectBox";
+import { UploadedFile } from "~/interfaces/UploadedFile";
 
 export async function loader({ request }: ActionArgs) {
   const user = await authenticator.isAuthenticated(request, {
@@ -61,15 +62,23 @@ export default function Upload() {
         <Form
           method="post"
           encType="multipart/form-data"
-          className="flex flex-col items-center text-center w-fill mb-5"
+          className="flex flex-col items-center justify-center text-center w-fill m-5 h-[85vh]"
         >
-          <h1 className="text-xl md:text-3xl mb-2">Upload Statement</h1>
+          <h1 className="text-xl md:text-3xl mb-2 text-darkAccent dark:text-primary m-6">
+            Upload Statement
+          </h1>
           {data?.message && (
             <span className="bg-error text-primary m-2 p-2 font-semibold rounded-lg">
               {data.message}
             </span>
           )}
-          <div className="w-3/4">
+          <input
+            type="hidden"
+            name="account"
+            id="account"
+            value={selectedAccount.id}
+          />
+          <div className="w-3/4 md:w-2/4">
             <Input
               classnm="text-darkAccent dark:text-primary"
               classlabel="text-darkAccent dark:text-primary"
@@ -79,9 +88,7 @@ export default function Upload() {
             ></Input>
           </div>
 
-          <input type="hidden" name="account" value={selectedAccount.id} />
-
-          <div className="w-3/4">
+          <div className="w-3/4 md:w-1/4 m-5">
             <SelectBox
               selectedItem={{
                 id: selectedAccount.id,
@@ -99,7 +106,7 @@ export default function Upload() {
             />
           </div>
 
-          <div className=" w-3/4">
+          <div className="w-3/4">
             <Button
               type="submit"
               disabled={navigation.state === "submitting"}
@@ -117,7 +124,11 @@ export default function Upload() {
 }
 
 export async function action({ request }: ActionArgs) {
-  const data = await request.formData();
+  await authenticator.isAuthenticated(request, {
+    failureRedirect: "/login",
+  });
+
+  const formCopy = request.clone();
   const file = await unstable_parseMultipartFormData(
     request,
     unstable_createFileUploadHandler({
@@ -125,22 +136,21 @@ export async function action({ request }: ActionArgs) {
     }) // <-- we'll look at this deeper next
   );
 
+  const data = await formCopy.formData();
+
   const accountId = data.get("account");
-  const filePath = file.get("file");
+  const uploaded = file.get("file") as unknown as UploadedFile;
 
-  if (!filePath || !accountId) return { message: "File not selected" };
+  if (uploaded.type !== "application/pdf")
+    return { message: "Only PDF file are accepted" };
 
-  const user = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/login",
-  });
+  if (!uploaded) return { message: "File not selected" };
 
-  const response = await parseTd(
-    filePath.toString(),
-    user.id,
-    accountId.toString()
-  );
+  if (!accountId) return { message: "Account not selected" };
 
-  if (response.isError()) return { message: "File could not be parsed" };
+  const response = await parseTd(uploaded, accountId.toString());
+
+  if (response.isError()) return response.error;
 
   return redirect("/");
 }

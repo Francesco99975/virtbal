@@ -22,18 +22,22 @@ const LoadingOverlay = (props: PropsWithChildren<any>) => {
 };
 
 const Loading = (props: PropsWithChildren<any>) => {
-  return (
-    <>
-      {createPortal(
-        <Backload onClick={props.onClick} />,
-        document.getElementById("backload") as HTMLElement
-      )}
-      {createPortal(
-        <LoadingOverlay>{props.children}</LoadingOverlay>,
-        document.getElementById("loading") as HTMLElement
-      )}
-    </>
-  );
+  if (typeof window !== "undefined") {
+    return (
+      <>
+        {createPortal(
+          <Backload onClick={props.onClick} />,
+          document.getElementById("backload") as HTMLElement
+        )}
+        {createPortal(
+          <LoadingOverlay>{props.children}</LoadingOverlay>,
+          document.getElementById("loading") as HTMLElement
+        )}
+      </>
+    );
+  }
+
+  return <></>;
 };
 
 export default Loading;

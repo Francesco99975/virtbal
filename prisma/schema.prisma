@@ -14,7 +14,7 @@ model Accounts {
   name       String       @unique @db.VarChar(12)
   bank       Int
   userId     String       @db.Uuid
-  users      Users        @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users      Users        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   statements Statements[]
 
   @@map("accounts")
@@ -27,8 +27,9 @@ model Statements {
   keep            Int
   date            DateTime       @db.Date
   startingBalance Int
+  fileHash        String         @db.VarChar
   accountId       String         @db.Uuid
-  accounts        Accounts       @relation(fields: [accountId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  accounts        Accounts       @relation(fields: [accountId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   transactions    Transactions[]
 
   @@map("statements")
@@ -41,7 +42,7 @@ model Transactions {
   isDeposit   Boolean
   date        String     @db.VarChar
   statementId String     @db.Uuid
-  statements  Statements @relation(fields: [statementId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  statements  Statements @relation(fields: [statementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("transactions")
 }
@@ -49,9 +50,18 @@ model Transactions {
 model Users {
   id             String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   username       String     @unique @db.VarChar(12)
-  hashedPassword String     @db.VarChar
+  password       Passwords?  
   createdAt      DateTime?  @default(now()) @db.Timestamptz(6)
   accounts       Accounts[]
 
   @@map("users")
+}
+
+model Passwords {
+  id             String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  hash           String     @db.VarChar
+  user           Users      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId         String     @db.Uuid @unique
+
+  @@map("passwords")
 }

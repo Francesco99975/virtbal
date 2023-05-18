@@ -1,5 +1,6 @@
 import axios, { AxiosResponse } from "axios";
 import fs from "fs/promises";
+import crypto from "crypto";
 import path from "path";
 import FormData from "form-data";
 import { parseDataFromCSVs } from "./helpers/parser.server";
@@ -8,20 +9,34 @@ import { Statement } from "~/interfaces/statement";
 import { ServerError } from "~/interfaces/serverError";
 import { Result, failure, success } from "~/interfaces/Result";
 import { prisma } from "./db.server";
+import { UploadedFile } from "~/interfaces/UploadedFile";
 
 export async function parseTd(
-  pdfPath: string,
-  userId: string,
+  pdfData: UploadedFile,
   accountId: string
 ): Promise<Result<ServerError, Statement>> {
   try {
     // Send request to flask server attached to tabula, to parse pdf to CSVs
-    const pdf = await fs.readFile(pdfPath);
+    const pdf = await fs.readFile(pdfData.filepath);
+    const hashSum = crypto.createHash("sha256");
+    hashSum.update(pdf);
+
+    const fileHash = hashSum.digest("hex");
+
+    const hashExists =
+      (await prisma.statements.findFirst({ where: { fileHash } })) != null;
+
+    if (hashExists)
+      return failure({
+        message: "This file was already uploaded",
+        error: null,
+        code: 401,
+      });
 
     const form = new FormData();
-    form.append("file", pdf, "file.pdf");
+    form.append("file", pdf, pdfData.name);
 
-    await fs.unlink(pdfPath);
+    await fs.unlink(pdfData.filepath);
 
     let zipRequest: AxiosResponse<any, any>;
     try {
@@ -30,8 +45,9 @@ export async function parseTd(
         responseType: "stream",
       });
     } catch (error) {
+      console.log(error);
       return failure({
-        message: "Could not fullfill request",
+        message: "Could not parse file through tabula",
         error,
         code: 500,
       });
@@ -68,9 +84,10 @@ export async function parseTd(
         deposited: totalDeposited,
         spent: totalSpent,
         keep: virtualKeep,
-        startingBalance: startingBalance,
+        startingBalance,
+        fileHash,
         date,
-        accountId: accountId,
+        accountId,
       },
     });
 
@@ -82,6 +99,7 @@ export async function parseTd(
 
     return success(statement);
   } catch (error) {
-    return failure({ message: "Could not fullfill request", error, code: 500 });
+    console.log(error);
+    return failure({ message: "Something went wrong", error, code: 500 });
   }
 }

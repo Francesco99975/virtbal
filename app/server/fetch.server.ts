@@ -4,7 +4,7 @@ import { ServerError } from "~/interfaces/serverError";
 import { Account } from "~/interfaces/account";
 import { Statement } from "~/interfaces/statement";
 import { authenticator } from "./auth/auth.server";
-import { ActionArgs, redirect } from "@remix-run/node";
+import { ActionArgs } from "@remix-run/node";
 import { logout } from "./auth/logout.server";
 
 export async function getUserAccounts(
@@ -15,11 +15,7 @@ export async function getUserAccounts(
       await prisma.accounts.findMany({
         where: { userId },
         include: {
-          statements: {
-            include: {
-              transactions: true,
-            },
-          },
+          statements: true,
         },
       })
     );
@@ -28,19 +24,18 @@ export async function getUserAccounts(
   }
 }
 
-export async function getAccountStatements(
-  accId: string
-): Promise<Result<ServerError, Statement[]>> {
+export async function getStatement(
+  statementId: string
+): Promise<Result<ServerError, Statement>> {
   try {
-    const statements = await prisma.statements.findMany({
+    const statement = await prisma.statements.findFirstOrThrow({
+      where: { id: statementId },
       include: {
         transactions: true,
       },
-      where: {
-        accountId: accId,
-      },
     });
-    return success(statements);
+
+    return success(statement);
   } catch (error) {
     return failure({ message: "Statements not found", error, code: 404 });
   }

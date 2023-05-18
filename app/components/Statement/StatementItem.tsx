@@ -6,20 +6,22 @@ interface StatementItemProps {
 
 export const StatementItem = ({ statement }: StatementItemProps) => {
   return (
-    <div className="bg-darkAccent text-primary dark:bg-primary dark:text-darkAccent rounded-sm flex w-full h-5 justify-between items-center mb-2 p-2">
+    <div className="bg-darkAccent text-primary dark:bg-primary dark:text-darkAccent rounded-md flex w-3/4 md:w-1/3 h-5 justify-between items-center mb-2 p-6">
       <span className="font-bold">
-        {statement.date.toLocaleDateString("en-US", {
+        {new Date(statement.date).toLocaleDateString("en-US", {
           month: "short",
           year: "numeric",
         })}
       </span>
 
-      {statement.virtualRemainder >= 0 ? (
+      {statement.keep >= 0 ? (
         <span className="italic text-accent">
-          +{statement.virtualRemainder}
+          $+{(statement.keep / 100).toFixed(2)}
         </span>
       ) : (
-        <span className="italic text-error">{statement.virtualRemainder}</span>
+        <span className="italic text-error">
+          ${(statement.keep / 100).toFixed(2)}
+        </span>
       )}
     </div>
   );

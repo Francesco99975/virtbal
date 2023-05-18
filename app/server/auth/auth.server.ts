@@ -10,11 +10,16 @@ const formStrategy = new FormStrategy(async ({ form }) => {
   const username = (form.get("username") as string).replace(/ /g, "");
   const password = (form.get("password") as string).replace(/ /g, "");
 
-  const user = await prisma.users.findFirst({ where: { username } });
+  const user = await prisma.users.findFirst({
+    where: { username },
+    include: {
+      password: true,
+    },
+  });
 
-  if (!user) throw new AuthorizationError("User not found");
+  if (!user || !user.password) throw new AuthorizationError("User not found");
 
-  const passwordsMatch = await bcrypt.compare(password, user.hashedPassword);
+  const passwordsMatch = await bcrypt.compare(password, user.password.hash);
 
   if (!passwordsMatch) throw new AuthorizationError("Invalid Password");
 

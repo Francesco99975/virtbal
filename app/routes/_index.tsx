@@ -20,24 +20,20 @@ export async function loader({ request }: ActionArgs) {
 
   const result = await getUserAccounts(user.id);
 
-  const username = user.username;
-  if (result.isError()) return { username, rawAccounts: "" };
+  if (result.isError()) throw new Error("Server error on retreiving data");
 
-  return { username, rawAccounts: JSON.stringify(result.value) };
+  const accounts = result.value;
+
+  return { accounts };
 }
 
 export default function Index() {
-  const { username, rawAccounts } = useLoaderData<typeof loader>();
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const { accounts } = useLoaderData() as unknown as { accounts: Account[] };
   const [selectedAccount, setSelectedAccount] = useState<Account>();
   const [statements, setStatements] = useState<Statement[]>([]);
 
   useEffect(() => {
-    console.log(username);
-    const parsedData = JSON.parse(rawAccounts) as Account[];
-    setAccounts(parsedData);
-    setSelectedAccount(parsedData[0]);
-    // setStatements(accounts[0].statements)
+    setSelectedAccount(accounts[0]);
   }, []);
 
   useEffect(() => {
@@ -52,9 +48,11 @@ export default function Index() {
 
   return (
     <>
-      {accounts.length > 0 && selectedAccount ? (
-        <div className="w-full md:w-3/4 h-[95vh] flex flex-col justify-center">
-          <div className="w-full">
+      {accounts.length > 0 &&
+      selectedAccount &&
+      selectedAccount.statements.length > 0 ? (
+        <div className="w-full h-[85vh] flex flex-col items-center">
+          <div className="w-full flex flex-col md:flex-row justify-center m-6 p-6">
             <SelectBox
               contextName="Account"
               selectedItem={{
@@ -73,9 +71,11 @@ export default function Index() {
             />
           </div>
 
-          <div className="w-full h-[85vh] flex flex-col justify-center mt-2 p-1">
+          <div className="w-full flex flex-col items-center mt-3 p-1 h-[65vh] overflow-scroll">
             {statements.map((statement) => (
-              <StatementItem statement={statement} />
+              <Link to={statement.id}>
+                <StatementItem key={statement.id} statement={statement} />
+              </Link>
             ))}
           </div>
         </div>

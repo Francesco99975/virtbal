@@ -16,10 +16,12 @@ interface RawData {
 const processData = (
   row: RawData,
   transactions: Transaction[],
-  startingBalance: number
+  startingBalance: { amount: number }
 ) => {
   if (row.description.includes("STARTING BALANCE"))
-    startingBalance = parseFloat(row.balance.replace(/,/g, "")) * 100;
+    startingBalance.amount = Math.trunc(
+      parseFloat(row.balance.replace(/,/g, "")) * 100
+    );
   else {
     const isValid = row.deposits !== "" || row.withdrawals !== "";
     const isDpt = row.withdrawals == "";
@@ -27,8 +29,8 @@ const processData = (
       transactions.push({
         description: row.description,
         amount: !isDpt
-          ? parseFloat(row.withdrawals.replace(/,/g, "")) * 100
-          : parseFloat(row.deposits.replace(/,/g, "")) * 100,
+          ? Math.trunc(parseFloat(row.withdrawals.replace(/,/g, "")) * 100)
+          : Math.trunc(parseFloat(row.deposits.replace(/,/g, "")) * 100),
         isDeposit: isDpt,
         date: row.date,
       });
@@ -39,9 +41,9 @@ const unzipScript = async () => {
   return await new Promise<void>((resolve, reject) => {
     try {
       if (!shell.pwd().includes("data"))
-        shell.cd(path.resolve(__dirname, "..", "data"));
+        shell.cd(path.resolve(__dirname, "data"));
 
-      shell.exec(path.resolve(__dirname, "..", "scripts", "unzipcsv.sh"), () =>
+      shell.exec(path.resolve(__dirname, "scripts", "unzipcsv.sh"), () =>
         resolve()
       );
     } catch (error) {
@@ -54,9 +56,9 @@ const csvScript = async () => {
   return await new Promise<void>((resolve, reject) => {
     try {
       if (!shell.pwd().includes("data"))
-        shell.cd(path.resolve(__dirname, "..", "data"));
+        shell.cd(path.resolve(__dirname, "data"));
 
-      shell.exec(path.resolve(__dirname, "..", "scripts", "merge.sh"), () =>
+      shell.exec(path.resolve(__dirname, "scripts", "merge.sh"), () =>
         resolve()
       );
     } catch (error) {
@@ -72,7 +74,7 @@ export const parseDataFromCSVs = async (dir: string) => {
   return await new Promise<ParsedData>((resolve, reject) => {
     try {
       const transactions: Transaction[] = [];
-      const startingBalance: number = 0.0;
+      const startingBalance: { amount: number } = { amount: 0 };
       const promises: any[] = [];
 
       fs.createReadStream(path.resolve(dir, "combined.csv"))
@@ -90,7 +92,11 @@ export const parseDataFromCSVs = async (dir: string) => {
             shell.rm("*");
             shell.cd(path.resolve(__dirname));
           }
-          return resolve({ transactions, startingBalance, date: new Date() });
+          return resolve({
+            transactions,
+            startingBalance: startingBalance.amount,
+            date: new Date(),
+          });
         })
         .on("error", function (error) {
           reject(error.message);

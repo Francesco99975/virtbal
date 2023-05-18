@@ -19,6 +19,7 @@ CREATE TABLE "statements" (
     "keep" INTEGER NOT NULL,
     "date" DATE NOT NULL,
     "startingBalance" INTEGER NOT NULL,
+    "fileHash" VARCHAR NOT NULL,
     "accountId" UUID NOT NULL,
 
     CONSTRAINT "statements_pkey" PRIMARY KEY ("id")
@@ -40,10 +41,18 @@ CREATE TABLE "transactions" (
 CREATE TABLE "users" (
     "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
     "username" VARCHAR(12) NOT NULL,
-    "hashedPassword" VARCHAR NOT NULL,
     "createdAt" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "passwords" (
+    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+    "hash" VARCHAR NOT NULL,
+    "userId" UUID NOT NULL,
+
+    CONSTRAINT "passwords_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -52,11 +61,17 @@ CREATE UNIQUE INDEX "accounts_name_key" ON "accounts"("name");
 -- CreateIndex
 CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 
--- AddForeignKey
-ALTER TABLE "accounts" ADD CONSTRAINT "accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+-- CreateIndex
+CREATE UNIQUE INDEX "passwords_userId_key" ON "passwords"("userId");
 
 -- AddForeignKey
-ALTER TABLE "statements" ADD CONSTRAINT "statements_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "accounts"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "transactions" ADD CONSTRAINT "transactions_statementId_fkey" FOREIGN KEY ("statementId") REFERENCES "statements"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE "statements" ADD CONSTRAINT "statements_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "accounts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_statementId_fkey" FOREIGN KEY ("statementId") REFERENCES "statements"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "passwords" ADD CONSTRAINT "passwords_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

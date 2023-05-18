@@ -1,6 +1,6 @@
 import { cssBundleHref } from "@remix-run/css-bundle";
 import stylesheet from "~/tailwind.css";
-import { ActionArgs, LinksFunction, json, redirect } from "@remix-run/node";
+import { ActionArgs, LinksFunction } from "@remix-run/node";
 import {
   Link,
   Links,

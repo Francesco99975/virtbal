@@ -1,3 +1,5 @@
+import Transaction from "./transaction";
+
 export interface Statement {
   id: string;
   spent: number;
@@ -5,4 +7,5 @@ export interface Statement {
   keep: number;
   date: Date;
   startingBalance: number;
+  transactions?: Transaction[];
 }
