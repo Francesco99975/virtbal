@@ -7,12 +7,13 @@ export default {
     extend: {
       colors: {
         primary: "#EAF9D9",
-        accent: "#1BAE6E",
+        accent: "#5EDFA7",
         darkAccent: "#084028",
         // accent: "#955e42",
         // darkAccent: "#5A3522",
         bcd: "#232020",
-        error: "#821322"
+        bl: "#F8F8E9",
+        error: "#D8223D"
       },
       // backgroundImage: {
       //   cake: "url('/public/cake.webp')",
@@ -46,6 +47,6 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [require('tailwind-scrollbar-hide')],
 } satisfies Config
 

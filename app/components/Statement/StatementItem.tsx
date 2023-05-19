@@ -1,3 +1,4 @@
+import { Link } from "@remix-run/react";
 import { Statement } from "~/interfaces/statement";
 
 interface StatementItemProps {
@@ -6,7 +7,10 @@ interface StatementItemProps {
 
 export const StatementItem = ({ statement }: StatementItemProps) => {
   return (
-    <div className="bg-darkAccent text-primary dark:bg-primary dark:text-darkAccent rounded-md flex w-3/4 md:w-1/3 h-5 justify-between items-center mb-2 p-6">
+    <Link
+      to={`/statements/${statement.id}`}
+      className="bg-darkAccent text-primary dark:bg-primary dark:text-darkAccent rounded-md flex w-3/4 md:w-1/3 h-5 justify-between items-center mb-2 p-6"
+    >
       <span className="font-bold">
         {new Date(statement.date).toLocaleDateString("en-US", {
           month: "short",
@@ -23,6 +27,6 @@ export const StatementItem = ({ statement }: StatementItemProps) => {
           ${(statement.keep / 100).toFixed(2)}
         </span>
       )}
-    </div>
+    </Link>
   );
 };

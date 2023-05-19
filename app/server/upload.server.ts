@@ -65,6 +65,19 @@ export async function parseTd(
     const { transactions, startingBalance, date }: ParsedData =
       await parseDataFromCSVs(path.resolve(__dirname, "data"));
 
+    const existingDate =
+      (await prisma.statements.findMany({ where: { date: date } })).length > 0;
+
+    if (existingDate)
+      return failure({
+        message: `A Statement for ${new Date(date).toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        })} was already uploaded`,
+        error: null,
+        code: 401,
+      });
+
     // Calculate Results
 
     const totalDeposited = transactions
@@ -98,6 +111,28 @@ export async function parseTd(
     }
 
     return success(statement);
+  } catch (error) {
+    console.log(error);
+    return failure({ message: "Something went wrong", error, code: 500 });
+  }
+}
+
+export async function deleteStatement(
+  statementId: string
+): Promise<Result<ServerError, Statement>> {
+  try {
+    const deletedStatement = await prisma.statements.delete({
+      where: { id: statementId },
+    });
+
+    if (!deletedStatement)
+      return failure({
+        message: "Statement not found",
+        error: null,
+        code: 404,
+      });
+
+    return success(deletedStatement);
   } catch (error) {
     console.log(error);
     return failure({ message: "Something went wrong", error, code: 500 });

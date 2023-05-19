@@ -54,7 +54,7 @@ export default function App() {
         <Meta />
         <Links />
       </head>
-      <body className="dark:bg-bcd">
+      <body className="dark:bg-bcd bg-bl">
         <div id="backload"></div>
         <div id="loading"></div>
         <Header balance={balance} />

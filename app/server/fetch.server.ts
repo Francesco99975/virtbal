@@ -15,7 +15,7 @@ export async function getUserAccounts(
       await prisma.accounts.findMany({
         where: { userId },
         include: {
-          statements: true,
+          statements: { orderBy: { date: "asc" } },
         },
       })
     );

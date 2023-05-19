@@ -13,6 +13,21 @@ interface RawData {
   balance: string;
 }
 
+const months = [
+  "jan",
+  "feb",
+  "mar",
+  "apr",
+  "may",
+  "jun",
+  "jul",
+  "aug",
+  "sep",
+  "oct",
+  "nov",
+  "dec",
+];
+
 const processData = (
   row: RawData,
   transactions: Transaction[],
@@ -38,16 +53,19 @@ const processData = (
 };
 
 const unzipScript = async () => {
-  return await new Promise<void>((resolve, reject) => {
+  return await new Promise<string>((resolve, reject) => {
     try {
       if (!shell.pwd().includes("data"))
         shell.cd(path.resolve(__dirname, "data"));
 
-      shell.exec(path.resolve(__dirname, "scripts", "unzipcsv.sh"), () =>
-        resolve()
-      );
+      const yearString = shell.exec(
+        path.resolve(__dirname, "scripts", "unzipcsv.sh"),
+        { silent: true }
+      ).stdout;
+
+      resolve(yearString.substring(yearString.lastIndexOf("/") + 1));
     } catch (error) {
-      reject();
+      return reject(error);
     }
   });
 };
@@ -62,47 +80,58 @@ const csvScript = async () => {
         resolve()
       );
     } catch (error) {
-      reject();
+      reject(error);
     }
   });
 };
 
 export const parseDataFromCSVs = async (dir: string) => {
-  await unzipScript();
-  await csvScript();
+  try {
+    const year = await unzipScript();
+    await csvScript();
 
-  return await new Promise<ParsedData>((resolve, reject) => {
-    try {
-      const transactions: Transaction[] = [];
-      const startingBalance: { amount: number } = { amount: 0 };
-      const promises: any[] = [];
+    return await new Promise<ParsedData>((resolve, reject) => {
+      try {
+        const transactions: Transaction[] = [];
+        const startingBalance: { amount: number } = { amount: 0 };
+        const promises: any[] = [];
 
-      fs.createReadStream(path.resolve(dir, "combined.csv"))
-        .pipe(
-          csv({
-            mapHeaders: ({ header }) => header.toLowerCase(),
+        fs.createReadStream(path.resolve(dir, "combined.csv"))
+          .pipe(
+            csv({
+              mapHeaders: ({ header }) => header.toLowerCase(),
+            })
+          )
+          .on("data", function (row: RawData) {
+            promises.push(processData(row, transactions, startingBalance));
           })
-        )
-        .on("data", function (row: RawData) {
-          promises.push(processData(row, transactions, startingBalance));
-        })
-        .on("end", async function () {
-          await Promise.all(promises);
-          if (shell.pwd().includes("data")) {
-            shell.rm("*");
-            shell.cd(path.resolve(__dirname));
-          }
-          return resolve({
-            transactions,
-            startingBalance: startingBalance.amount,
-            date: new Date(),
+          .on("end", async function () {
+            await Promise.all(promises);
+            if (shell.pwd().includes("data")) {
+              shell.rm("*");
+              shell.cd(path.resolve(__dirname));
+            }
+            const date = new Date(
+              2000 + +year,
+              months.indexOf(
+                transactions[0].date.substring(0, 3).toLocaleLowerCase()
+              ),
+              2
+            );
+            return resolve({
+              transactions,
+              startingBalance: startingBalance.amount,
+              date,
+            });
+          })
+          .on("error", function (error) {
+            reject(error.message);
           });
-        })
-        .on("error", function (error) {
-          reject(error.message);
-        });
-    } catch (error) {
-      reject("We've thrown! Whoops!");
-    }
-  });
+      } catch (error) {
+        reject("We've thrown! Whoops!");
+      }
+    });
+  } catch (error) {
+    throw new Error("Script Error");
+  }
 };

@@ -141,10 +141,10 @@ export async function action({ request }: ActionArgs) {
   const accountId = data.get("account");
   const uploaded = file.get("file") as unknown as UploadedFile;
 
+  if (!uploaded) return { message: "File not selected" };
+
   if (uploaded.type !== "application/pdf")
     return { message: "Only PDF file are accepted" };
-
-  if (!uploaded) return { message: "File not selected" };
 
   if (!accountId) return { message: "Account not selected" };
 

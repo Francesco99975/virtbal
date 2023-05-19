@@ -47,12 +47,7 @@ export default function DropMenu({ isLoggedIn }: DropMenuProps) {
               {({ active }) => (
                 <button
                   type="button"
-                  className={classNames(
-                    active
-                      ? "bg-accent text-darkAccent dark:bg-primary dark:text-accent"
-                      : "text-primary dark:text-darkAccent",
-                    "block px-4 py-2 text-sm"
-                  )}
+                  className="block px-4 py-2 text-sm"
                   onClick={toggleDark}
                 >
                   {isDark ? (
@@ -68,7 +63,7 @@ export default function DropMenu({ isLoggedIn }: DropMenuProps) {
                 <Menu.Item>
                   {({ active }) => (
                     <NavLink
-                      to="/"
+                      to="/statements"
                       // className={classNames(
                       //   active
                       //     ? "bg-accent text-darkAccent dark:bg-primary dark:text-accent"

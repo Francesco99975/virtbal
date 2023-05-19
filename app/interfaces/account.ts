@@ -29,5 +29,5 @@ export interface Account {
   id: string;
   name: string;
   bank: BANK;
-  statements: Statement[];
+  statements?: Statement[];
 }
