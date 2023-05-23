@@ -7,5 +7,6 @@ export interface Statement {
   keep: number;
   date: Date;
   startingBalance: number;
+  accountId?: string;
   transactions?: Transaction[];
 }

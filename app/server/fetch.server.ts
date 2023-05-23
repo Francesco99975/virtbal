@@ -1,11 +1,13 @@
 import { Result, failure, success } from "~/interfaces/Result";
 import { prisma } from "./db.server";
 import { ServerError } from "~/interfaces/serverError";
-import { Account } from "~/interfaces/account";
+import { Account, PAYEE_TYPE } from "~/interfaces/account";
 import { Statement } from "~/interfaces/statement";
 import { authenticator } from "./auth/auth.server";
 import { ActionArgs } from "@remix-run/node";
 import { logout } from "./auth/logout.server";
+import Transaction from "~/interfaces/transaction";
+import { Spending } from "~/interfaces/spending";
 
 export async function getUserAccounts(
   userId: string
@@ -38,6 +40,73 @@ export async function getStatement(
     return success(statement);
   } catch (error) {
     return failure({ message: "Statements not found", error, code: 404 });
+  }
+}
+
+export async function getSpending(
+  transactions: Transaction[],
+  accountId: string
+): Promise<Result<ServerError, Spending>> {
+  try {
+    const trackedPayees = await prisma.payees.findMany({
+      where: { accountId },
+      select: { name: true, type: true },
+    });
+
+    const extra = transactions
+      .filter((transaction) =>
+        trackedPayees
+          .filter((payee) => payee.type == PAYEE_TYPE.EXTRA)
+          .map((payee) => payee.name)
+          .includes(transaction.description)
+      )
+      .reduce((prev, item) => prev + item.amount, 0);
+
+    const essentialTransactions = transactions
+      .filter((transaction) =>
+        trackedPayees
+          .filter((payee) => payee.type == PAYEE_TYPE.ESSENTIAL)
+          .map((payee) => payee.name)
+          .includes(transaction.description)
+      )
+      .map((transaction) => transaction.id!);
+
+    const recurringTransactions = transactions
+      .filter((transaction) =>
+        trackedPayees
+          .filter((payee) => payee.type == PAYEE_TYPE.RECURRING)
+          .map((payee) => payee.name)
+          .includes(transaction.description)
+      )
+      .map((transaction) => transaction.id!);
+
+    const recurring = transactions
+      .filter((transaction) =>
+        trackedPayees
+          .filter((payee) => payee.type == PAYEE_TYPE.RECURRING)
+          .map((payee) => payee.name)
+          .includes(transaction.description)
+      )
+      .reduce((prev, item) => prev + item.amount, 0);
+
+    const essential = transactions
+      .filter((transaction) =>
+        trackedPayees
+          .filter((payee) => payee.type == PAYEE_TYPE.ESSENTIAL)
+          .map((payee) => payee.name)
+          .includes(transaction.description)
+      )
+      .reduce((prev, item) => prev + item.amount, 0);
+
+    return success({
+      recurring,
+      essential,
+      extra,
+      essentialTransactions,
+      recurringTransactions,
+    });
+  } catch (error) {
+    return failure({ message: "Could not verify spending", error, code: 404 });
   }
 }
 

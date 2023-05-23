@@ -55,6 +55,8 @@ export default function App() {
         <Links />
       </head>
       <body className="dark:bg-bcd bg-bl">
+        <div id="backdrop"></div>
+        <div id="modal"></div>
         <div id="backload"></div>
         <div id="loading"></div>
         <Header balance={balance} />
@@ -93,6 +95,8 @@ export function ErrorBoundary() {
           <title>A server error as occurred</title>
         </head>
         <body className="dark:bg-bcd">
+          <div id="backdrop"></div>
+          <div id="modal"></div>
           <div id="backload"></div>
           <div id="loading"></div>
           <Header />

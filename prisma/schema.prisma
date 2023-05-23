@@ -11,13 +11,24 @@ datasource db {
 
 model Accounts {
   id         String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  name       String       @unique @db.VarChar(12)
+  name       String       @db.VarChar(12)
   bank       Int
   userId     String       @db.Uuid
   users      Users        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   statements Statements[]
+  payees     Payees[]
 
   @@map("accounts")
+}
+
+model Payees {
+  id         String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name       String       @db.VarChar
+  type       Int
+  accountId  String       @db.Uuid
+  accounts   Accounts     @relation(fields: [accountId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("payees")
 }
 
 model Statements {

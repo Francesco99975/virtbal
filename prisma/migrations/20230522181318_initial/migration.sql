@@ -12,6 +12,16 @@ CREATE TABLE "accounts" (
 );
 
 -- CreateTable
+CREATE TABLE "payees" (
+    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+    "name" VARCHAR NOT NULL,
+    "type" INTEGER NOT NULL,
+    "accountId" UUID NOT NULL,
+
+    CONSTRAINT "payees_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "statements" (
     "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
     "spent" INTEGER NOT NULL,
@@ -56,9 +66,6 @@ CREATE TABLE "passwords" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "accounts_name_key" ON "accounts"("name");
-
--- CreateIndex
 CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 
 -- CreateIndex
@@ -66,6 +73,9 @@ CREATE UNIQUE INDEX "passwords_userId_key" ON "passwords"("userId");
 
 -- AddForeignKey
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "payees" ADD CONSTRAINT "payees_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "accounts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "statements" ADD CONSTRAINT "statements_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "accounts"("id") ON DELETE CASCADE ON UPDATE CASCADE;

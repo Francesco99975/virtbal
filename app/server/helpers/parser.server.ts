@@ -63,6 +63,8 @@ const unzipScript = async () => {
         { silent: true }
       ).stdout;
 
+      console.log(yearString);
+
       resolve(yearString.substring(yearString.lastIndexOf("/") + 1));
     } catch (error) {
       return reject(error);
@@ -88,6 +90,7 @@ const csvScript = async () => {
 export const parseDataFromCSVs = async (dir: string) => {
   try {
     const year = await unzipScript();
+    console.log(year);
     await csvScript();
 
     return await new Promise<ParsedData>((resolve, reject) => {

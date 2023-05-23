@@ -5,7 +5,6 @@ import {
   ChevronDownIcon,
 } from "@heroicons/react/20/solid";
 import { Form, NavLink } from "@remix-run/react";
-import Button from "./Button";
 import SunIcon from "../Icons/SunIcon";
 import MoonIcon from "../Icons/MoonIcon";
 import ThemeContext from "~/store/theme-context";
@@ -105,6 +104,20 @@ export default function DropMenu({ isLoggedIn }: DropMenuProps) {
                       }
                     >
                       Upload Statement
+                    </NavLink>
+                  )}
+                </Menu.Item>
+                <Menu.Item>
+                  {({ active }) => (
+                    <NavLink
+                      to="/settings"
+                      className={({ isActive }) =>
+                        isActive
+                          ? "bg-accent text-darkAccent dark:bg-primary dark:text-accent block px-4 py-2 text-sm"
+                          : "text-primary dark:text-darkAccent block px-4 py-2 text-sm"
+                      }
+                    >
+                      Profile Settings
                     </NavLink>
                   )}
                 </Menu.Item>

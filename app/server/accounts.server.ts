@@ -1,7 +1,7 @@
 import { Result, failure, success } from "~/interfaces/Result";
 import { ServerError } from "~/interfaces/serverError";
 import { prisma } from "./db.server";
-import { Account } from "~/interfaces/account";
+import { Account, PAYEE_TYPE } from "~/interfaces/account";
 import { AuthorizationError } from "remix-auth";
 import bcrypt from "bcrypt";
 
@@ -26,6 +26,32 @@ export async function addAccount(
     return success({ code: 201 });
   } catch (error) {
     return failure({ message: "Could not add account", error, code: 403 });
+  }
+}
+
+export async function updateAccountPayees(
+  selection: number[],
+  names: string[],
+  accountId: string
+): Promise<Result<ServerError, { code: number }>> {
+  try {
+    for (let index = 0; index < selection.length; index++) {
+      await prisma.payees.create({
+        data: {
+          name: names[index],
+          type: selection[index],
+          accountId,
+        },
+      });
+    }
+
+    return success({ code: 201 });
+  } catch (error) {
+    return failure({
+      message: "Could not update account name",
+      error,
+      code: 403,
+    });
   }
 }
 

@@ -13,6 +13,12 @@ export enum BANK {
   IC,
 }
 
+export enum PAYEE_TYPE {
+  RECURRING,
+  ESSENTIAL,
+  EXTRA,
+}
+
 export const BankLabels: BoxItem[] = [
   { id: "ze3WKn&", avatar: "TD", name: "TD Bank" },
   { id: "A?!8z7&", avatar: "TAN", name: "Tangerine Bank" },
@@ -25,9 +31,16 @@ export const BankLabels: BoxItem[] = [
   { id: "@EYK@64", avatar: "IC", name: "IC Bank" },
 ];
 
+export interface Payee {
+  id: string;
+  name: string;
+  type: PAYEE_TYPE;
+}
+
 export interface Account {
   id: string;
   name: string;
   bank: BANK;
   statements?: Statement[];
+  payees?: Payee[];
 }

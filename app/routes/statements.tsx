@@ -32,7 +32,8 @@ export default function Statements() {
   }, []);
 
   useEffect(() => {
-    if (selectedAccount) setStatements(selectedAccount.statements);
+    if (selectedAccount && selectedAccount.statements)
+      setStatements(selectedAccount.statements);
   }, [selectedAccount]);
 
   const handleSelection = (value: BoxItem) => {
@@ -45,6 +46,7 @@ export default function Statements() {
     <>
       {accounts.length > 0 &&
       selectedAccount &&
+      selectedAccount.statements &&
       selectedAccount.statements.length > 0 ? (
         <div className="w-full flex flex-col items-center">
           <div className="w-full flex flex-col md:flex-row justify-center m-6 p-6">
@@ -66,7 +68,7 @@ export default function Statements() {
             />
           </div>
 
-          <div className="w-full flex flex-col items-center mt-3 p-1 h-[55vh] md:h-[70vh]">
+          <div className="w-full flex flex-col items-center mt-3 p-1 h-[55vh] md:h-[70vh] whitespace-nowrap overflow-auto scrollbar-hide">
             {statements.map((statement) => (
               <StatementItem key={statement.id} statement={statement} />
             ))}
