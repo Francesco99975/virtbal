@@ -63,9 +63,12 @@ const unzipScript = async () => {
         { silent: true }
       ).stdout;
 
-      console.log(yearString);
-
-      resolve(yearString.substring(yearString.lastIndexOf("/") + 1));
+      resolve(
+        yearString.substring(
+          yearString.indexOf("/") + 1,
+          yearString.indexOf("-") - 1
+        )
+      );
     } catch (error) {
       return reject(error);
     }
@@ -90,7 +93,6 @@ const csvScript = async () => {
 export const parseDataFromCSVs = async (dir: string) => {
   try {
     const year = await unzipScript();
-    console.log(year);
     await csvScript();
 
     return await new Promise<ParsedData>((resolve, reject) => {
@@ -114,13 +116,11 @@ export const parseDataFromCSVs = async (dir: string) => {
               shell.rm("*");
               shell.cd(path.resolve(__dirname));
             }
-            const date = new Date(
-              2000 + +year,
-              months.indexOf(
-                transactions[0].date.substring(0, 3).toLocaleLowerCase()
-              ),
-              2
+            const month = months.indexOf(
+              transactions[0].date.substring(0, 3).toLocaleLowerCase()
             );
+            const y = month === 0 ? +year + 1 : +year;
+            const date = new Date(2000 + y, month, 2);
             return resolve({
               transactions,
               startingBalance: startingBalance.amount,

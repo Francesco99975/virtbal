@@ -1,4 +1,4 @@
-unzip csvs.zip
+unzip -qq csvs.zip
 rm csvs.zip
 cmp=Description,Withdrawals,Deposits,Date,Balance
 for file in *.csv ; do
