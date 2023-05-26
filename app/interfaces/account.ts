@@ -1,5 +1,5 @@
 import { BoxItem } from "~/components/UI/SelectBox";
-import { Statement } from "./statement";
+import { EncryptedStatement, Statement } from "./statement";
 
 export enum BANK {
   TD,
@@ -42,5 +42,13 @@ export interface Account {
   name: string;
   bank: BANK;
   statements?: Statement[];
+  payees?: Payee[];
+}
+
+export interface EncryptedAccount {
+  id: string;
+  name: string;
+  bank: BANK;
+  statements?: EncryptedStatement[];
   payees?: Payee[];
 }

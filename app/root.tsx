@@ -1,6 +1,11 @@
 import { cssBundleHref } from "@remix-run/css-bundle";
 import stylesheet from "~/tailwind.css";
-import { ActionArgs, LinksFunction } from "@remix-run/node";
+import {
+  ActionArgs,
+  LinksFunction,
+  LoaderArgs,
+  redirect,
+} from "@remix-run/node";
 import {
   Link,
   Links,
@@ -14,10 +19,14 @@ import {
   useRouteError,
 } from "@remix-run/react";
 import { Header } from "./components/Header/Header";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 import ThemeContext from "./store/theme-context";
 import { logout } from "./server/auth/logout.server";
 import { getVirtualKeep } from "./server/fetch.server";
+import Loading from "./components/UI/Loading";
+import { decryptData } from "./helpers/decrypt";
+import { authenticator } from "./server/auth/auth.server";
+import { Decrypting } from "./components/UI/Decrypting";
 
 export const links: LinksFunction = () => [
   ...(cssBundleHref
@@ -28,23 +37,81 @@ export const links: LinksFunction = () => [
     : [{ rel: "stylesheet", href: stylesheet }]),
 ];
 
-export async function loader(args: ActionArgs) {
+export async function loader(args: LoaderArgs) {
   const response = await getVirtualKeep(args);
 
   if (response.isError()) {
-    return { balance: response.error.message };
+    console.log(response.error.message);
+    return {
+      encryptedKeeps: [],
+      username: "",
+    };
   }
 
-  return { balance: response.value };
+  return {
+    encryptedKeeps: response.value.encryptedKeeps,
+    username: response.value.username,
+  };
 }
 
 export default function App() {
   const { isDark, set } = useContext(ThemeContext);
-  const { balance } = useLoaderData();
+  const { encryptedKeeps, username } = useLoaderData() as unknown as {
+    encryptedKeeps: string[];
+    username: string;
+  };
+  const [balance, setBalance] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const decryptBalance = async () => {
+    try {
+      if (!encryptedKeeps || encryptedKeeps.length <= 0) {
+        setLoading(false);
+        return;
+      }
+
+      let balance = 0;
+
+      for (const encryptedKeep of encryptedKeeps) {
+        const keep = +(await decryptData(encryptedKeep, username));
+        balance += keep;
+      }
+
+      setBalance(balance);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     set();
+    decryptBalance();
   }, []);
+
+  if (loading) {
+    return (
+      <html lang="en" className={isDark ? "dark" : ""}>
+        <head>
+          <meta charSet="utf-8" />
+          <meta name="viewport" content="width=device-width,initial-scale=1" />
+          <Meta />
+          <Links />
+        </head>
+        <body className="dark:bg-bcd bg-bl">
+          <div id="backdrop"></div>
+          <div id="modal"></div>
+          <div id="backload"></div>
+          <div id="loading"></div>
+          <Decrypting />
+          <ScrollRestoration />
+          <Scripts />
+          <LiveReload />
+        </body>
+      </html>
+    );
+  }
 
   return (
     <html lang="en" className={isDark ? "dark" : ""}>
@@ -59,7 +126,7 @@ export default function App() {
         <div id="modal"></div>
         <div id="backload"></div>
         <div id="loading"></div>
-        <Header balance={balance} />
+        <Header balance={balance} username={username} />
         <Outlet />
         <ScrollRestoration />
         <Scripts />

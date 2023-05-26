@@ -33,21 +33,23 @@ export async function loader({ request }: ActionArgs) {
 
   if (result.value.length === 0) return redirect("/accounts");
 
-  return { rawAccounts: JSON.stringify(result.value) };
+  const accounts = result.value;
+
+  return { accounts };
 }
 
 export default function Upload() {
   const navigation = useNavigation();
   const data = useActionData();
 
-  const { rawAccounts } = useLoaderData();
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const { accounts } = useLoaderData() as unknown as { accounts: Account[] };
+  // const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<Account>();
 
   useEffect(() => {
-    const parsedData = JSON.parse(rawAccounts) as Account[];
-    setAccounts(parsedData);
-    setSelectedAccount(parsedData[0]);
+    // const parsedData = JSON.parse(rawAccounts) as Account[];
+    // setAccounts(parsedData);
+    setSelectedAccount(accounts[0]);
   }, []);
 
   const handleSelection = (value: BoxItem) => {
@@ -124,7 +126,7 @@ export default function Upload() {
 }
 
 export async function action({ request }: ActionArgs) {
-  await authenticator.isAuthenticated(request, {
+  const user = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
   });
 
@@ -148,7 +150,7 @@ export async function action({ request }: ActionArgs) {
 
   if (!accountId) return { message: "Account not selected" };
 
-  const response = await parseTd(uploaded, accountId.toString());
+  const response = await parseTd(uploaded, accountId.toString(), user.id);
 
   if (response.isError()) return response.error;
 

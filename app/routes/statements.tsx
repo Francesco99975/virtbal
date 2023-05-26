@@ -1,34 +1,127 @@
+import { Accounts } from "@prisma/client";
 import { ActionArgs, V2_MetaFunction } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import { StatementItem } from "~/components/Statement/StatementItem";
+import Loading from "~/components/UI/Loading";
 import { BoxItem, SelectBox } from "~/components/UI/SelectBox";
-import { Account, BankLabels } from "~/interfaces/account";
+import { decryptData } from "~/helpers/decrypt";
+import { Account, BankLabels, EncryptedAccount } from "~/interfaces/account";
 import { Statement } from "~/interfaces/statement";
+import { Transaction } from "~/interfaces/transaction";
 import { authenticator } from "~/server/auth/auth.server";
-import { getUserAccounts } from "~/server/fetch.server";
+import {
+  getUserAccounts,
+  getUserAccountsWithStatements,
+} from "~/server/fetch.server";
 
 export async function loader({ request }: ActionArgs) {
   const user = await authenticator.isAuthenticated(request, {
     failureRedirect: "/login",
   });
 
-  const result = await getUserAccounts(user.id);
+  const result = await getUserAccountsWithStatements(user.id);
 
   if (result.isError()) throw new Error("Server error on retreiving data");
 
-  const accounts = result.value;
+  const encryptedAccounts = result.value;
 
-  return { accounts };
+  return { encryptedAccounts, username: user.username };
 }
 
 export default function Statements() {
-  const { accounts } = useLoaderData() as unknown as { accounts: Account[] };
+  const { encryptedAccounts, username } = useLoaderData() as unknown as {
+    encryptedAccounts: EncryptedAccount[];
+    username: string;
+  };
+
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<Account>();
   const [statements, setStatements] = useState<Statement[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const decryptStatements = async () => {
+    try {
+      const decryptedAccounts: Account[] = [];
+      for (const encryptedAccount of encryptedAccounts) {
+        const decryptedStatements: Statement[] = [];
+
+        if (encryptedAccount.statements) {
+          const encryptedStatements = encryptedAccount.statements;
+
+          for (const encryptedStatement of encryptedStatements) {
+            const spent = +(await decryptData(
+              encryptedStatement.spent,
+              username
+            ));
+            const deposited = +(await decryptData(
+              encryptedStatement.deposited,
+              username
+            ));
+            const keep = +(await decryptData(
+              encryptedStatement.keep,
+              username
+            ));
+
+            const starting = +(await decryptData(
+              encryptedStatement.startingBalance,
+              username
+            ));
+
+            const decyptedTransactions: Transaction[] = [];
+            if (encryptedStatement.transactions) {
+              for (const encryptedTransaction of encryptedStatement.transactions) {
+                const description = await decryptData(
+                  encryptedTransaction.description,
+                  username
+                );
+
+                const amount = +(await decryptData(
+                  encryptedTransaction.amount,
+                  username
+                ));
+
+                decyptedTransactions.push({
+                  id: encryptedTransaction.id,
+                  date: encryptedTransaction.date,
+                  isDeposit: encryptedTransaction.isDeposit,
+                  description,
+                  amount,
+                });
+              }
+            }
+
+            decryptedStatements.push({
+              id: encryptedStatement.id,
+              spent,
+              deposited,
+              keep,
+              startingBalance: starting,
+              date: encryptedStatement.date,
+              accountId: encryptedStatement.accountId,
+              transactions: decyptedTransactions,
+            });
+          }
+        }
+
+        decryptedAccounts.push({
+          id: encryptedAccount.id,
+          bank: encryptedAccount.bank,
+          name: encryptedAccount.name,
+          statements: decryptedStatements,
+        });
+      }
+      setAccounts(decryptedAccounts);
+      setSelectedAccount(decryptedAccounts[0]);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setSelectedAccount(accounts[0]);
+    decryptStatements();
   }, []);
 
   useEffect(() => {

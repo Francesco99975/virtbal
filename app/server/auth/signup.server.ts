@@ -5,7 +5,8 @@ import { ServerError } from "~/interfaces/serverError";
 
 export const signup = async (
   username: string,
-  password: string
+  password: string,
+  publicKey: string
 ): Promise<Result<ServerError, { code: number }>> => {
   const usernameExists =
     (await prisma.users.findMany({ where: { username: username } })).length > 0;
@@ -24,6 +25,11 @@ export const signup = async (
       password: {
         create: {
           hash: hashedPassword,
+        },
+      },
+      publicKey: {
+        create: {
+          armored: publicKey,
         },
       },
     },

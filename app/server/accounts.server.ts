@@ -4,6 +4,8 @@ import { prisma } from "./db.server";
 import { Account, PAYEE_TYPE } from "~/interfaces/account";
 import { AuthorizationError } from "remix-auth";
 import bcrypt from "bcrypt";
+import { encryptData } from "./helpers/encrypt.server";
+import { readKey } from "openpgp";
 
 export interface AccountData {
   name: string;
@@ -30,25 +32,55 @@ export async function addAccount(
 }
 
 export async function updateAccountPayees(
-  selection: number[],
-  names: string[],
-  accountId: string
+  updaingIds: string[],
+  updatingSelections: number[],
+  newSelections: number[],
+  newNames: string[],
+  accountId: string,
+  userId: string
 ): Promise<Result<ServerError, { code: number }>> {
   try {
-    for (let index = 0; index < selection.length; index++) {
-      await prisma.payees.create({
-        data: {
-          name: names[index],
-          type: selection[index],
-          accountId,
-        },
-      });
+    // Get Encryption Key
+
+    const user = await prisma.users.findFirst({
+      where: { id: userId },
+      include: { publicKey: { select: { armored: true } } },
+    });
+    if (!user)
+      return failure({ message: "User not found", error: null, code: 404 });
+    if (!user.publicKey)
+      return failure({ message: "Key not found", error: null, code: 404 });
+
+    const key: string = user.publicKey.armored;
+    const publicKey = await readKey({ armoredKey: key });
+
+    if (newNames.length > 0) {
+      for (let index = 0; index < newSelections.length; index++) {
+        const encryptedName = await encryptData(newNames[index], publicKey);
+        await prisma.payees.create({
+          data: {
+            name: encryptedName,
+            type: newSelections[index],
+            accountId,
+          },
+        });
+      }
+    }
+
+    if (updaingIds.length > 0) {
+      for (let index = 0; index < updaingIds.length; index++) {
+        await prisma.payees.update({
+          where: { id: updaingIds[index] },
+          data: { type: updatingSelections[index] },
+        });
+      }
     }
 
     return success({ code: 201 });
   } catch (error) {
+    console.log(error);
     return failure({
-      message: "Could not update account name",
+      message: "Could not update account payees",
       error,
       code: 403,
     });

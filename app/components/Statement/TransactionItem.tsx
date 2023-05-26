@@ -1,5 +1,5 @@
 import { PAYEE_TYPE } from "~/interfaces/account";
-import Transaction from "~/interfaces/transaction";
+import { Transaction } from "~/interfaces/transaction";
 
 interface TransactionItemProps {
   transaction: Transaction;

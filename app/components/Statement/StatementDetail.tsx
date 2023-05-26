@@ -1,11 +1,11 @@
 import { Statement } from "~/interfaces/statement";
-import Transaction from "~/interfaces/transaction";
+import { Transaction } from "~/interfaces/transaction";
 import { TransactionItem } from "./TransactionItem";
 import Button from "../UI/Button";
-import { Form } from "@remix-run/react";
+import { Form, useActionData } from "@remix-run/react";
 import { useState } from "react";
 import { PayeeSelection } from "./PayeeSelection";
-import { PAYEE_TYPE } from "~/interfaces/account";
+import { PAYEE_TYPE, Payee } from "~/interfaces/account";
 
 interface StatementDetailProps {
   statement: Statement;
@@ -14,6 +14,7 @@ interface StatementDetailProps {
   extraCost?: number;
   essentialTransactions?: string[];
   recurringTransactions?: string[];
+  all?: Payee[];
 }
 
 export const StatementDetail = ({
@@ -23,6 +24,7 @@ export const StatementDetail = ({
   extraCost,
   essentialTransactions,
   recurringTransactions,
+  all,
 }: StatementDetailProps) => {
   const [payeeModalOpen, SetPayeeModalOpen] = useState(false);
 
@@ -133,10 +135,25 @@ export const StatementDetail = ({
             onBackdropClick={handlePayeeModalOpen}
             payees={statement.transactions
               .filter((transaction) => !transaction.isDeposit)
-              .filter((desc, index, arr) => arr.indexOf(desc) === index)}
+              .reduce(
+                (arr, cur) => {
+                  if (
+                    !arr.map((o) => o.description).includes(cur.description)
+                  ) {
+                    arr.push(cur);
+                  }
+                  return arr;
+                },
+                [
+                  statement.transactions.filter(
+                    (transaction) => !transaction.isDeposit
+                  )[0],
+                ]
+              )}
             accountId={statement.accountId}
             essentialTransactions={essentialTransactions}
             recurringTransactions={recurringTransactions}
+            all={all || []}
           />
         )}
     </>

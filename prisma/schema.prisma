@@ -33,11 +33,11 @@ model Payees {
 
 model Statements {
   id              String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  spent           Int
-  deposited       Int
-  keep            Int
+  spent           String         @db.VarChar
+  deposited       String         @db.VarChar
+  keep            String         @db.VarChar
   date            DateTime       @db.Date
-  startingBalance Int
+  startingBalance String         @db.VarChar
   fileHash        String         @db.VarChar
   accountId       String         @db.Uuid
   accounts        Accounts       @relation(fields: [accountId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -49,7 +49,7 @@ model Statements {
 model Transactions {
   id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   description String     @db.VarChar
-  amount      Int
+  amount      String     @db.VarChar
   isDeposit   Boolean
   date        String     @db.VarChar
   statementId String     @db.Uuid
@@ -61,7 +61,8 @@ model Transactions {
 model Users {
   id             String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   username       String     @unique @db.VarChar(12)
-  password       Passwords?  
+  password       Passwords?
+  publicKey      Keys?
   createdAt      DateTime?  @default(now()) @db.Timestamptz(6)
   accounts       Accounts[]
 
@@ -75,4 +76,13 @@ model Passwords {
   userId         String     @db.Uuid @unique
 
   @@map("passwords")
+}
+
+model Keys {
+  id             String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  armored        String     @db.VarChar
+  user           Users      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId         String     @db.Uuid @unique
+
+  @@map("keys")
 }

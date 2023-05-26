@@ -5,16 +5,19 @@ import path from "path";
 import FormData from "form-data";
 import { parseDataFromCSVs } from "./helpers/parser.server";
 import { ParsedData } from "~/interfaces/parsedData";
-import { Statement } from "~/interfaces/statement";
 import { ServerError } from "~/interfaces/serverError";
 import { Result, failure, success } from "~/interfaces/Result";
 import { prisma } from "./db.server";
 import { UploadedFile } from "~/interfaces/UploadedFile";
+import { readKey } from "openpgp";
+import { encryptData } from "./helpers/encrypt.server";
+import { Statements } from "@prisma/client";
 
 export async function parseTd(
   pdfData: UploadedFile,
-  accountId: string
-): Promise<Result<ServerError, Statement>> {
+  accountId: string,
+  userId: string
+): Promise<Result<ServerError, { code: number }>> {
   try {
     // Send request to flask server attached to tabula, to parse pdf to CSVs
     const pdf = await fs.readFile(pdfData.filepath);
@@ -78,26 +81,49 @@ export async function parseTd(
         code: 401,
       });
 
-    // Calculate Results
+    // Get Encryption Key
 
-    const totalDeposited = transactions
+    const user = await prisma.users.findFirst({
+      where: { id: userId },
+      include: { publicKey: { select: { armored: true } } },
+    });
+    if (!user)
+      return failure({ message: "User not found", error: null, code: 404 });
+    if (!user.publicKey)
+      return failure({ message: "Key not found", error: null, code: 404 });
+
+    const key: string = user.publicKey.armored;
+    const publicKey = await readKey({ armoredKey: key });
+
+    // Calculate Results
+    const rawDeposit = transactions
       .filter((trs) => trs.isDeposit)
       .reduce((prev, curr) => prev + curr.amount, 0);
+    const totalDeposited = await encryptData(rawDeposit.toString(), publicKey);
 
-    const totalSpent = transactions
+    const rawSpent = transactions
       .filter((trs) => !trs.isDeposit)
       .reduce((prev, curr) => prev + curr.amount, 0);
+    const totalSpent = await encryptData(rawSpent.toString(), publicKey);
 
-    const virtualKeep = totalDeposited - totalSpent;
+    const virtualKeep = await encryptData(
+      (rawDeposit - rawSpent).toString(),
+      publicKey
+    );
+
+    const startingBalanceEncrypted = await encryptData(
+      startingBalance.toString(),
+      publicKey
+    );
 
     // Return Results JSON Object
 
-    const statement: Statement = await prisma.statements.create({
+    const statement: Statements = await prisma.statements.create({
       data: {
         deposited: totalDeposited,
         spent: totalSpent,
         keep: virtualKeep,
-        startingBalance,
+        startingBalance: startingBalanceEncrypted,
         fileHash,
         date,
         accountId,
@@ -105,12 +131,27 @@ export async function parseTd(
     });
 
     for (const transaction of transactions) {
+      const encryptedAmount = await encryptData(
+        transaction.amount.toString(),
+        publicKey
+      );
+
+      const encryptedDescripttion = await encryptData(
+        transaction.description,
+        publicKey
+      );
       await prisma.transactions.create({
-        data: { ...transaction, statementId: statement.id },
+        data: {
+          description: encryptedDescripttion,
+          amount: encryptedAmount,
+          date: transaction.date,
+          isDeposit: transaction.isDeposit,
+          statementId: statement.id,
+        },
       });
     }
 
-    return success(statement);
+    return success({ code: 201 });
   } catch (error) {
     console.log(error);
     return failure({ message: "Something went wrong", error, code: 500 });
@@ -119,7 +160,7 @@ export async function parseTd(
 
 export async function deleteStatement(
   statementId: string
-): Promise<Result<ServerError, Statement>> {
+): Promise<Result<ServerError, Statements>> {
   try {
     const deletedStatement = await prisma.statements.delete({
       where: { id: statementId },
