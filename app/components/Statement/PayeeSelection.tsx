@@ -3,7 +3,7 @@ import Button from "../UI/Button";
 import Modal from "../UI/Modal";
 import Input from "../UI/Input";
 import { RadioGroup } from "@headlessui/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PAYEE_TYPE, Payee } from "~/interfaces/account";
 import { Transaction } from "~/interfaces/transaction";
 
@@ -24,15 +24,19 @@ export const PayeeSelection = ({
   essentialTransactions,
   recurringTransactions,
 }: PayeeSelectionProps) => {
-  const [payeeSelection, setPayeeSelection] = useState(
-    payees.map((payee) =>
-      essentialTransactions?.includes(payee.id!)
-        ? PAYEE_TYPE.ESSENTIAL
-        : recurringTransactions?.includes(payee.id!)
-        ? PAYEE_TYPE.RECURRING
-        : PAYEE_TYPE.EXTRA
-    )
-  );
+  const [payeeSelection, setPayeeSelection] = useState<PAYEE_TYPE[]>([]);
+
+  useEffect(() => {
+    setPayeeSelection(
+      payees.map((payee) =>
+        essentialTransactions?.includes(payee.id!)
+          ? PAYEE_TYPE.ESSENTIAL
+          : recurringTransactions?.includes(payee.id!)
+          ? PAYEE_TYPE.RECURRING
+          : PAYEE_TYPE.EXTRA
+      )
+    );
+  }, []);
 
   const submit = useSubmit();
   const [clientErrorMessage, setClientErrorMessage] = useState("");

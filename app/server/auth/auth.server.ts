@@ -7,7 +7,9 @@ import { Users } from "@prisma/client";
 
 const authenticator = new Authenticator<Users>(sessionStorage);
 const formStrategy = new FormStrategy(async ({ form }) => {
-  const username = (form.get("username") as string).replace(/ /g, "");
+  const username = (form.get("username") as string)
+    .replace(/ /g, "")
+    .toLowerCase();
   const password = (form.get("password") as string).replace(/ /g, "");
 
   const user = await prisma.users.findFirst({

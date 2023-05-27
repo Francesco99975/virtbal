@@ -9,26 +9,39 @@ import {
 } from "~/interfaces/account";
 import { EncryptedStatement, Statement } from "~/interfaces/statement";
 import { authenticator } from "./auth/auth.server";
-import { ActionArgs } from "@remix-run/node";
+import { ActionArgs, LoaderArgs } from "@remix-run/node";
 import { logout } from "./auth/logout.server";
 import { Spending } from "~/interfaces/spending";
 import { Accounts, Statements } from "@prisma/client";
 import { Transaction } from "~/interfaces/transaction";
+import { raw } from "@prisma/client/runtime";
 
 export async function getUserAccountsWithStatements(
-  userId: string
-): Promise<Result<ServerError, EncryptedAccount[]>> {
+  userId: string,
+  args: LoaderArgs
+): Promise<
+  Result<
+    ServerError,
+    { encryptedAccounts: EncryptedAccount[]; encryptedKeeps?: string[] }
+  >
+> {
   try {
-    return success(
-      await prisma.accounts.findMany({
-        where: { userId },
-        include: {
-          payees: false,
-          users: false,
-          statements: { orderBy: { date: "asc" } },
-        },
-      })
-    );
+    const encryptedAccounts = await prisma.accounts.findMany({
+      where: { userId },
+      include: {
+        payees: false,
+        users: false,
+        statements: { orderBy: { date: "asc" } },
+      },
+    });
+
+    const rawVirtual = await getVirtualKeep(args);
+
+    if (rawVirtual.isError()) return success({ encryptedAccounts });
+
+    const encryptedKeeps = rawVirtual.value.encryptedKeeps;
+
+    return success({ encryptedAccounts, encryptedKeeps });
   } catch (error) {
     return failure({ message: "Accounts not found", error, code: 404 });
   }
@@ -177,7 +190,7 @@ export async function getVirtualKeep(
 
     if (user.accounts.length <= 0)
       return failure({
-        message: "Could not find user",
+        message: "Could not find accounts",
         error: null,
         code: 404,
       });

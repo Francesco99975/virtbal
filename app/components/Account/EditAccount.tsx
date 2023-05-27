@@ -1,4 +1,4 @@
-import { Form } from "@remix-run/react";
+import { Form, useSubmit } from "@remix-run/react";
 import Button from "../UI/Button";
 import Modal from "../UI/Modal";
 import Input from "../UI/Input";
@@ -12,9 +12,24 @@ export const EditAccount = ({
   onBackdropClick,
   accountId,
 }: EditAccountProps) => {
+  const submit = useSubmit();
   return (
     <Modal onClick={onBackdropClick}>
-      <Form className="flex flex-col w-full p-6">
+      <Form
+        onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
+          event.preventDefault();
+          let $form = event.currentTarget;
+
+          let formData = new FormData($form);
+
+          onBackdropClick();
+          submit(formData, {
+            method: "post",
+          });
+        }}
+        method="post"
+        className="flex flex-col w-full p-6"
+      >
         <h2 className="text-primary dark:text-darkAccent">
           Change Account Name
         </h2>

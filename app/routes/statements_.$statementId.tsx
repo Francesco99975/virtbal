@@ -43,7 +43,6 @@ export async function loader({ params, request }: LoaderArgs) {
     return { encryptedStatement, username: user.username };
 
   const encryptedPayees = payeesResult.value;
-
   return { encryptedStatement, encryptedPayees, username: user.username };
 }
 
@@ -180,7 +179,7 @@ export default function Statement() {
         }
       }
     } catch (error) {
-      console.log(error);
+      throw Error("Something went wrong while decrypting statements");
     } finally {
       setLoading(false);
     }
@@ -188,7 +187,7 @@ export default function Statement() {
 
   useEffect(() => {
     decryptStatement();
-  }, []);
+  }, [encryptedPayees]);
 
   if (loading) {
     return <Decrypting />;
@@ -282,12 +281,6 @@ export async function action({ request }: ActionArgs) {
 
     if (newPayeeNames.length <= 0 && updatingPayeeIds.length <= 0)
       return { message: "Fields empty" };
-
-    console.log(newPayeeNames);
-    console.log(updatingPayeeIds);
-
-    console.log(newPayeeSelections);
-    console.log(updatingPayeeSelections);
 
     // Update account with selections
     const response = await updateAccountPayees(

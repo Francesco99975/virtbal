@@ -22,7 +22,7 @@ export const AccountItem = ({ account }: AccountItemProps) => {
   return (
     <>
       <div className="bg-darkAccent text-primary dark:bg-primary dark:text-darkAccent rounded-md flex w-3/4 md:w-1/3 h-5 justify-between items-center mb-2 p-6">
-        <span className="flex w-1/3">
+        <span className="flex items-center">
           <span className="rounded-full bg-primary dark:bg-darkAccent text-darkAccent dark:text-primary p-2 font-bold text-base">
             {BankLabels[account.bank].avatar}
           </span>
@@ -31,11 +31,11 @@ export const AccountItem = ({ account }: AccountItemProps) => {
           </span>
         </span>
 
-        <div className="flex justify-around items-center w-1/2">
+        <div className="flex justify-end items-center">
           <Button
             type="button"
             onClick={handleEditModal}
-            className="p-2 rounded-sm text-center bg-blue-700"
+            className="mr-2 p-2 rounded-sm text-center bg-blue-700"
           >
             <PencilSquareIcon
               className="h-5 w-5 text-primary"
@@ -45,7 +45,7 @@ export const AccountItem = ({ account }: AccountItemProps) => {
           <Button
             type="button"
             onClick={handleDelModal}
-            className="p-2 text-center rounded-sm bg-error"
+            className="ml-2 p-2 text-center rounded-sm bg-error"
           >
             <TrashIcon
               className="h-5 w-5 text-primary"

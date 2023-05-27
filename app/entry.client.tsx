@@ -8,15 +8,15 @@ import { RemixBrowser } from "@remix-run/react";
 import { startTransition, StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
 import ThemeContextProvider from "./store/ThemeContextProvider";
-import StatementsContextProvider from "./store/StatementsContextProvider";
+import GlobalValuesContextProvider from "./store/GlobalValuesContextProvider";
 
 startTransition(() => {
   hydrateRoot(
     document,
     <ThemeContextProvider>
-      <StatementsContextProvider>
+      <GlobalValuesContextProvider>
         <RemixBrowser />
-      </StatementsContextProvider>
+      </GlobalValuesContextProvider>
     </ThemeContextProvider>
   );
 });

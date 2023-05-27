@@ -27,6 +27,7 @@ import Loading from "./components/UI/Loading";
 import { decryptData } from "./helpers/decrypt";
 import { authenticator } from "./server/auth/auth.server";
 import { Decrypting } from "./components/UI/Decrypting";
+import GlobalValuesContext from "./store/global-values-context";
 
 export const links: LinksFunction = () => [
   ...(cssBundleHref
@@ -56,11 +57,12 @@ export async function loader(args: LoaderArgs) {
 
 export default function App() {
   const { isDark, set } = useContext(ThemeContext);
+  const { setCurrentKeep, setCurrentUsername } =
+    useContext(GlobalValuesContext);
   const { encryptedKeeps, username } = useLoaderData() as unknown as {
     encryptedKeeps: string[];
     username: string;
   };
-  const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const decryptBalance = async () => {
@@ -77,9 +79,11 @@ export default function App() {
         balance += keep;
       }
 
-      setBalance(balance);
+      setCurrentKeep(balance);
     } catch (error) {
-      console.log(error);
+      throw Error(
+        "Something went wrong while decrypting total virtual balance"
+      );
     } finally {
       setLoading(false);
     }
@@ -87,6 +91,7 @@ export default function App() {
 
   useEffect(() => {
     set();
+    setCurrentUsername(username);
     decryptBalance();
   }, []);
 
@@ -126,7 +131,7 @@ export default function App() {
         <div id="modal"></div>
         <div id="backload"></div>
         <div id="loading"></div>
-        <Header balance={balance} username={username} />
+        <Header />
         <Outlet />
         <ScrollRestoration />
         <Scripts />
@@ -167,16 +172,16 @@ export function ErrorBoundary() {
           <div id="backload"></div>
           <div id="loading"></div>
           <Header />
-          <main className="flex flex-col w-full">
-            <h1 className="bg-error text-primary text-xl m-2 p-2">
+          <main className="flex flex-col w-full items-center">
+            <h1 className="bg-error text-primary text-xl m-2 p-2 rounded-md text-center">
               An error occurred! Code: {error.status}
             </h1>
-            <p className="bg-error text-primary text-lg p-2">
+            <p className="bg-error text-primary text-lg p-2 rounded-sm text-center">
               {error.data.message}
             </p>
             <Link
               to="/login"
-              className="text-accent dark:text-primary hover:underline"
+              className="text-accent dark:text-primary hover:underline m-5 text-center text-2xl"
             >
               Back to safety
             </Link>
@@ -202,14 +207,16 @@ export function ErrorBoundary() {
         <div id="backload"></div>
         <div id="loading"></div>
         <Header />
-        <main className="flex flex-col w-full">
-          <h1 className="bg-error text-primary text-xl m-2 p-2">
+        <main className="flex flex-col w-full items-center">
+          <h1 className="bg-error text-primary text-xl m-2 p-2 rounded-md text-center">
             An error occurred!
           </h1>
-          <p className="bg-error text-primary text-lg p-2">{error.message}</p>
+          <p className="bg-error text-primary text-lg p-2 rounded-sm text-center">
+            {error.message}
+          </p>
           <Link
             to="/login"
-            className="text-accent dark:text-primary hover:underline"
+            className="text-accent dark:text-primary hover:underline m-5 text-center text-2xl"
           >
             Back to safety
           </Link>

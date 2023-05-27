@@ -1,4 +1,4 @@
-import { ActionArgs } from "@remix-run/node";
+import { ActionArgs, redirect } from "@remix-run/node";
 import {
   Form,
   Link,
@@ -6,13 +6,14 @@ import {
   useNavigation,
   useSubmit,
 } from "@remix-run/react";
-import { generateKey } from "openpgp";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Loading from "~/components/UI/Loading";
+import { generateKeys } from "~/helpers/generateKeys";
 import { authenticator } from "~/server/auth/auth.server";
 import { signup } from "~/server/auth/signup.server";
+import GlobalValuesContext from "~/store/global-values-context";
 
 export async function loader({ request }: ActionArgs) {
   return await authenticator.isAuthenticated(request, {
@@ -20,26 +21,19 @@ export async function loader({ request }: ActionArgs) {
   });
 }
 
-const generateKeys = async (username: string) => {
-  const { privateKey, publicKey, revocationCertificate } = await generateKey({
-    type: "ecc", // Type of the key, defaults to ECC
-    curve: "curve25519", // ECC curve name, defaults to curve25519
-    userIDs: [{ name: username }], // you can pass multiple user IDs
-    // passphrase: userId, // protects the private key
-    format: "armored", // output key format, defaults to 'armored' (other options: 'binary' or 'object')
-  });
-
-  localStorage.setItem(`${username}-privkey`, privateKey);
-  localStorage.setItem(`${username}-revoke`, revocationCertificate);
-
-  return publicKey;
-};
-
 export default function SignUp() {
   const navigation = useNavigation();
   const data = useActionData();
   const [clientErrorMessage, setClientErrorMessage] = useState("");
   const submit = useSubmit();
+
+  const { setCurrentKeep, setCurrentUsername } =
+    useContext(GlobalValuesContext);
+
+  useEffect(() => {
+    setCurrentKeep(0);
+    setCurrentUsername("");
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -49,12 +43,26 @@ export default function SignUp() {
 
       let formData = new FormData($form);
 
-      const username = (formData.get("username") as string).replace(/ /g, "");
+      const username = (formData.get("username") as string)
+        .replace(/ /g, "")
+        .toLowerCase();
+      const password = (formData.get("password") as string).replace(/ /g, "");
+      const confirm = (formData.get("confirm") as string).replace(/ /g, "");
 
-      if (!username) {
+      if (!username || !password || !confirm) {
         setClientErrorMessage("Form is incomplete. Fill every field correctly");
         return;
       }
+
+      if (username.length > 12)
+        setClientErrorMessage(
+          "Username too long. Must be less than 12 characters"
+        );
+
+      if (username.length <= 0 || password.length <= 0 || confirm.length <= 0)
+        setClientErrorMessage("Form is incomplete. Fill every field correctly");
+
+      if (password !== confirm) setClientErrorMessage("Passwords don't match");
 
       const publicKey = await generateKeys(username);
 
@@ -123,7 +131,7 @@ export default function SignUp() {
 
         <Link
           to="/login"
-          className="text-lg text-primary dark:text-accent mt-6"
+          className="text-lg text-primary dark:text-accent mt-6 text-center"
         >
           I already have an account
         </Link>
@@ -136,7 +144,9 @@ export default function SignUp() {
 export async function action({ request }: ActionArgs) {
   const form = await request.formData();
 
-  const username = (form.get("username") as string).replace(/ /g, "");
+  const username = (form.get("username") as string)
+    .replace(/ /g, "")
+    .toLowerCase();
   const password = (form.get("password") as string).replace(/ /g, "");
   const confirm = (form.get("confirm") as string).replace(/ /g, "");
   const key = form.get("key") as string;
@@ -153,9 +163,5 @@ export async function action({ request }: ActionArgs) {
 
   if (result.isError()) return result.error;
 
-  return await authenticator.authenticate("form", request, {
-    successRedirect: "/login",
-    failureRedirect: "/signup",
-    context: { formData: form },
-  });
+  return redirect("/login");
 }

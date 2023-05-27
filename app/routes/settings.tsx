@@ -214,6 +214,8 @@ export async function action(args: ActionArgs) {
     if (response.isError())
       return { ...response.error, message3: response.error.message };
 
+    const deletedUser = response.value;
+
     return await logout(args);
   }
 }

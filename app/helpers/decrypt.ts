@@ -1,4 +1,5 @@
 import { decrypt, decryptKey, readMessage, readPrivateKey } from "openpgp";
+import { getSHA256Hash } from "./hash";
 
 export const decryptData = async (encryptedData: string, username: string) => {
   const key = localStorage.getItem(`${username}-privkey`);
@@ -8,14 +9,14 @@ export const decryptData = async (encryptedData: string, username: string) => {
   const privateKey = await readPrivateKey({ armoredKey: key });
 
   if (!privateKey.isDecrypted()) {
-    const privateKeyDescrypted = await decryptKey({ privateKey });
+    const privateKeyDecrypted = await decryptKey({ privateKey });
 
     const message = await readMessage({
       armoredMessage: encryptedData, // parse armored message
     });
     const { data: decrypted } = await decrypt({
       message,
-      decryptionKeys: privateKeyDescrypted,
+      decryptionKeys: privateKeyDecrypted,
     });
 
     return decrypted.toString();

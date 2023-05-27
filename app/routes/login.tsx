@@ -1,10 +1,12 @@
 import { ActionArgs } from "@remix-run/node";
-import { Form, Link, useNavigation } from "@remix-run/react";
+import { Form, Link, useNavigation, useSubmit } from "@remix-run/react";
+import { useContext, useEffect } from "react";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Loading from "~/components/UI/Loading";
 import { authenticator } from "~/server/auth/auth.server";
 import { login } from "~/server/auth/login.server";
+import GlobalValuesContext from "~/store/global-values-context";
 
 export async function loader({ request }: ActionArgs) {
   return await authenticator.isAuthenticated(request, {
@@ -14,7 +16,13 @@ export async function loader({ request }: ActionArgs) {
 
 export default function Login() {
   const navigation = useNavigation();
+  const { setCurrentKeep, setCurrentUsername } =
+    useContext(GlobalValuesContext);
 
+  useEffect(() => {
+    setCurrentKeep(0);
+    setCurrentUsername("");
+  }, []);
   return (
     <div className="flex justify-center items-center w-full h-[85vh]">
       <Form
@@ -50,7 +58,7 @@ export default function Login() {
 
         <Link
           to="/signup"
-          className="text-lg text-primary dark:text-accent mt-6"
+          className="text-lg text-primary dark:text-accent mt-6 text-center"
         >
           I don't have am account yet
         </Link>

@@ -1,4 +1,4 @@
-import { Form } from "@remix-run/react";
+import { Form, useSubmit } from "@remix-run/react";
 import Button from "../UI/Button";
 import Modal from "../UI/Modal";
 import Input from "../UI/Input";
@@ -12,9 +12,28 @@ export const DeleteAccount = ({
   onBackdropClick,
   accountId,
 }: DeleteAccountProps) => {
+  const submit = useSubmit();
   return (
     <Modal onClick={onBackdropClick}>
-      <Form className="flex flex-col w-full p-6">
+      <Form
+        onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
+          if (!confirm("Are you sure?")) {
+            event.preventDefault();
+            return;
+          }
+          event.preventDefault();
+          let $form = event.currentTarget;
+
+          let formData = new FormData($form);
+
+          onBackdropClick();
+          submit(formData, {
+            method: "post",
+          });
+        }}
+        method="delete"
+        className="flex flex-col w-full p-6"
+      >
         <h2 className="text-error underline font-bold">Delete Account</h2>
         <input type="hidden" name="action" value="delacc" />
         <input type="hidden" name="id" value={accountId} />

@@ -1,8 +1,9 @@
 import { Accounts } from "@prisma/client";
 import { ActionArgs, V2_MetaFunction } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { StatementItem } from "~/components/Statement/StatementItem";
+import { Decrypting } from "~/components/UI/Decrypting";
 import Loading from "~/components/UI/Loading";
 import { BoxItem, SelectBox } from "~/components/UI/SelectBox";
 import { decryptData } from "~/helpers/decrypt";
@@ -14,31 +15,36 @@ import {
   getUserAccounts,
   getUserAccountsWithStatements,
 } from "~/server/fetch.server";
+import GlobalValuesContext from "~/store/global-values-context";
 
-export async function loader({ request }: ActionArgs) {
-  const user = await authenticator.isAuthenticated(request, {
+export async function loader(args: ActionArgs) {
+  const user = await authenticator.isAuthenticated(args.request, {
     failureRedirect: "/login",
   });
 
-  const result = await getUserAccountsWithStatements(user.id);
+  const result = await getUserAccountsWithStatements(user.id, args);
 
   if (result.isError()) throw new Error("Server error on retreiving data");
 
-  const encryptedAccounts = result.value;
+  const encryptedAccounts = result.value.encryptedAccounts;
+  const encryptedKeeps = result.value.encryptedKeeps || [];
 
-  return { encryptedAccounts, username: user.username };
+  return { encryptedAccounts, encryptedKeeps, username: user.username };
 }
 
 export default function Statements() {
-  const { encryptedAccounts, username } = useLoaderData() as unknown as {
-    encryptedAccounts: EncryptedAccount[];
-    username: string;
-  };
+  const { encryptedAccounts, encryptedKeeps, username } =
+    useLoaderData() as unknown as {
+      encryptedAccounts: EncryptedAccount[];
+      encryptedKeeps: string[];
+      username: string;
+    };
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<Account>();
   const [statements, setStatements] = useState<Statement[]>([]);
   const [loading, setLoading] = useState(true);
+  const { setCurrentKeep } = useContext(GlobalValuesContext);
 
   const decryptStatements = async () => {
     try {
@@ -110,11 +116,25 @@ export default function Statements() {
           name: encryptedAccount.name,
           statements: decryptedStatements,
         });
+
+        if (!encryptedKeeps || encryptedKeeps.length <= 0) {
+          setLoading(false);
+          return;
+        }
+
+        let balance = 0;
+
+        for (const encryptedKeep of encryptedKeeps) {
+          const keep = +(await decryptData(encryptedKeep, username));
+          balance += keep;
+        }
+
+        setCurrentKeep(balance);
       }
       setAccounts(decryptedAccounts);
       setSelectedAccount(decryptedAccounts[0]);
     } catch (error) {
-      console.log(error);
+      throw Error("Something went wrong while decrypting statements");
     } finally {
       setLoading(false);
     }
@@ -134,6 +154,8 @@ export default function Statements() {
 
     if (account) setSelectedAccount(account);
   };
+
+  if (loading) return <Decrypting />;
 
   return (
     <>
